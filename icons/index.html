@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0d0f">
+<meta name="description" content="오프라인 운동 인터벌 타이머 IntervalForge">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IntervalForge">
+<title>IntervalForge · 운동 타이머</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
+<link rel="stylesheet" href="./styles.css">
+<script type="module" src="./app.js"></script>
+</head>
+<body data-screen="timer">
+<a href="#main" class="skip-link">타이머로 이동</a>
+<div class="app-shell">
+<header class="app-header" id="main-header"><h1 class="sr-only">IntervalForge 운동 타이머</h1><button id="open-settings-button" class="icon-link" type="button" aria-controls="settings-screen" aria-expanded="false">설정</button></header>
+<main id="main"><noscript><div class="notice error">JavaScript를 허용해야 타이머가 작동합니다.</div></noscript><section id="timer-screen" class="timer-screen" aria-label="운동 타이머"><section class="timer-card" id="timer-card" data-kind="ready" aria-label="현재 구간 남은 시간"><output id="countdown" class="countdown" role="timer" aria-live="off" aria-label="현재 구간 남은 시간">00:10</output></section><section class="controls" aria-label="타이머 조작">
+  <button id="primary-button" class="primary-button" type="button">시작</button>
+  <button id="reset-button" class="secondary-button" type="button" disabled="">초기화</button>
+</section></section><section id="settings-screen" class="settings-screen" hidden="" aria-labelledby="settings-screen-title"><div class="settings-topbar"><button id="close-settings-button" class="secondary-button" type="button">← 타이머로 돌아가기</button><h2 id="settings-screen-title" tabindex="-1">설정</h2></div><div id="storage-warning" class="notice warning" role="status" hidden=""></div><div id="restore-notice" class="notice" role="status" hidden=""></div><section id="session-panel" class="session-panel" aria-label="현재 운동 정보"><div class="timer-topline">
+    <h2 id="timer-title">TABATA</h2>
+    <span id="display-mode" class="small-badge">브라우저</span>
+  </div><div id="phase-badge" class="phase-badge">READY</div><p id="phase-description" class="phase-description">시작할 준비가 되었습니다</p><p class="time-caption" id="time-caption">현재 구간 남은 시간</p><div class="round-line">
+    <span id="round-caption">라운드</span>
+    <strong id="round-value">준비 중 · 전체 8회</strong>
+  </div><div class="progress-heading"><span>전체 진행률</span><strong id="progress-value">0%</strong></div><progress id="workout-progress" value="0" max="1" aria-label="전체 운동 진행률"></progress><div class="time-stats">
+    <div><span>경과</span><strong id="elapsed-value">00:00</strong></div>
+    <div><span>전체 남은 시간 · 준비 포함</span><strong id="remaining-value">04:10</strong></div>
+    <div><span>전체 시간 · 준비 포함</span><strong id="total-value">04:10</strong></div>
+  </div><p id="next-phase" class="next-phase">다음: 휴식 10초</p><div id="finish-panel" class="finish-panel" hidden="">
+    <strong>운동을 완료했습니다</strong><p id="finish-summary"></p>
+  </div><p id="running-hint" class="control-hint">시작 버튼을 누르면 효과음이 활성화됩니다.</p></section><section class="settings-panel" id="settings-panel" aria-labelledby="settings-title" tabindex="-1">
+  <div class="section-heading">
+    <h2 id="settings-title">운동 설정</h2><span id="settings-lock" class="small-badge">자동 저장</span>
+  </div>
+  <form id="settings-form" novalidate="">
+    <fieldset id="workout-fields">
+      <legend class="sr-only">타이머 모드와 시간</legend>
+      <label class="full-field">타이머 모드
+        <select id="mode-select">
+          <option value="tabata">Tabata</option>
+          <option value="emom">EMOM</option>
+          <option value="amrap">AMRAP</option>
+          <option value="interval">사용자 지정 Interval</option>
+        </select>
+      </label>
+      <div class="fields-grid"><label id="prepare-field">준비 시간 (시작 전 1회)<span class="unit">초</span><input id="prepare-input" type="number" inputmode="numeric" min="0" max="600" step="1" value="10" aria-describedby="prepare-help" required=""></label>
+        <label id="work-field">운동 시간 <span class="unit">초</span>
+          <input id="work-input" type="number" inputmode="numeric" min="1" max="3600" step="1" value="20" required="">
+        </label>
+        <label id="rest-field">휴식 시간 <span class="unit">초</span>
+          <input id="rest-input" type="number" inputmode="numeric" min="0" max="3600" step="1" value="10" required="">
+        </label>
+        <label id="interval-field" hidden="">라운드 간격 <span class="unit">초</span>
+          <input id="interval-input" type="number" inputmode="numeric" min="1" max="3600" step="1" value="60" required="" disabled="">
+        </label>
+        <label id="duration-field" hidden="">전체 운동 시간 <span class="unit">초</span>
+          <input id="duration-input" type="number" inputmode="numeric" min="1" max="21600" step="1" value="600" required="" disabled="">
+        </label>
+        <label id="rounds-field">라운드 <span class="unit">회</span>
+          <input id="rounds-input" type="number" inputmode="numeric" min="1" max="200" step="1" value="8" required="">
+        </label>
+      </div>
+    </fieldset>
+    <div id="config-error" class="notice error" role="alert" hidden=""></div>
+    <p id="prepare-help" class="field-help">준비는 시작할 때 1회만 진행합니다. 0초이면 생략합니다. 일시정지 후 재개할 때 다시 시작하지 않습니다. 입력 범위: 0~600초.</p><p id="mode-explanation" class="field-help"></p>
+    <div class="plan-preview">
+      <span>예상 전체 시간 · 준비 포함</span><strong id="estimated-total">04:10</strong>
+      <p id="sequence-preview"></p>
+    <p id="exercise-total"></p></div>
+  </form>
+
+  <div class="audio-settings">
+    <label class="switch-row" for="sound-toggle">
+      <span>효과음<span class="sub-label">운동 · 휴식 · 3, 2, 1 · 종료</span></span>
+      <input id="sound-toggle" type="checkbox" checked="">
+    </label>
+    <label for="volume-input" class="volume-label">효과음 음량 <output id="volume-value">70%</output></label>
+    <input id="volume-input" type="range" min="0" max="100" step="1" value="70">
+    <div class="sound-line">
+      <p id="audio-status" role="status">시작 또는 효과음 테스트를 눌러 활성화</p>
+      <button id="sound-button" type="button" class="small-button">효과음 테스트 / 활성화</button>
+    </div>
+    <label class="switch-row" for="awake-toggle">
+      <span>운동 중 화면 켜짐 유지<span class="sub-label">지원 환경에서만 요청 · 수동 잠금은 막지 않음</span></span>
+      <input id="awake-toggle" type="checkbox" checked="">
+    </label>
+    <p id="wake-status" class="field-help" role="status">화면 유지: 대기</p>
+  </div>
+</section><aside class="limits-panel" aria-labelledby="limits-title">
+  <h2 id="limits-title">화면 잠금 전 확인</h2>
+  <p>iPhone 화면을 잠그거나 다른 앱으로 이동하면 소리가 멈출 수 있습니다. 돌아오면 실제 시각으로 남은 시간과 라운드를 복원합니다. 잠금 중 구간별 효과음·알림은 보장하지 않습니다.</p>
+</aside><details class="help-panel">
+  <summary>iPhone 설치 · 오프라인 · 사용 안내</summary>
+  <ol>
+    <li>배포된 HTTPS 주소를 Safari로 엽니다.</li>
+    <li>공유 → 홈 화면에 추가 → ‘웹 앱으로 열기’가 있으면 켜기 → 추가.</li>
+    <li>홈 화면 아이콘으로 온라인에서 한 번 실행하고 오프라인 준비 상태를 확인합니다.</li>
+    <li>효과음 테스트를 누르고 짧은 운동으로 소리를 확인합니다.</li>
+    <li>비행기 모드에서 다시 열어 오프라인 실행을 확인합니다.</li>
+  </ol>
+  <p>준비시간은 시작 전에 한 번만 진행하며 0초로 생략할 수 있습니다. 기본 Tabata의 운동·회복은 4분이고 준비10초를 더하면 총4분10초입니다. 사용자 지정 Interval은 마지막 휴식을 제외합니다.</p>
+  <p>설정 변경은 초기화 후 가능합니다. Safari와 홈 화면 앱의 저장 공간은 별도일 수 있습니다. 사이트 데이터 삭제·저장 공간 정리·앱 제거 시 복원 데이터가 사라질 수 있습니다.</p>
+  <p id="notification-capability"></p>
+  <p>이 버전에는 예약 알림이나 Push 서버가 없습니다. 알림 권한만으로 잠금 중 타이머를 깨울 수는 없습니다.</p>
+  <p>정확한 효과음이 필요하면 앱을 전면에 두고 화면을 켜 두세요. 전화·오디오 출력 변경·무음/음량·운영체제 정책도 소리에 영향을 줄 수 있습니다.</p>
+</details><section class="pwa-panel" aria-label="오프라인 및 업데이트 상태">
+  <p id="pwa-status" role="status">HTTPS 또는 localhost로 열면 오프라인 파일을 준비합니다.</p>
+  <p id="online-status"></p>
+  <div class="update-controls">
+    <button id="check-update-button" type="button" class="small-button">업데이트 확인</button>
+    <button id="apply-update-button" type="button" class="small-button accent-button" hidden="">새 버전 적용</button>
+  </div>
+  <p id="update-hint" class="field-help" hidden="">운동을 초기화하거나 완료한 후 적용할 수 있습니다.</p>
+</section><footer><span>IntervalForge 1.1.0 · 기기 내부 저장</span><a href="./tests/index.html" id="tests-link">자동 테스트</a></footer></section><div id="phase-announcement" class="sr-only" aria-live="polite" aria-atomic="true"></div></main>
+
+</div>
+<dialog id="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-description">
+  <form method="dialog">
+    <h2 id="reset-title">운동을 초기화할까요?</h2>
+    <p id="reset-description">진행 중인 시간과 라운드가 처음으로 돌아갑니다. 운동 설정은 유지됩니다.</p>
+    <div class="dialog-buttons">
+      <button value="cancel" class="secondary-button" autofocus="">취소</button>
+      <button value="reset" class="danger-button">초기화</button>
+    </div>
+  </form>
+</dialog>
+
+
+</body></html>

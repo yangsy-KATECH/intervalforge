@@ -1,0 +1,527 @@
+{
+  "executedAt": "2026-10-29T00:20:06.375Z",
+  "environment": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+  "scope": "사용자 브라우저에서 가짜 시계·오디오로 실행한 로직 검사",
+  "report": {
+    "total": 103,
+    "passed": 103,
+    "failed": 0,
+    "results": [
+      {
+        "name": "Tabata 준비0 총 시간은 마지막 회복 포함 240초",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "Interval 준비0은 마지막 휴식 없이 230초",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "EMOM 준비0 60초 × 10라운드",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "AMRAP 준비0은 600초 단일 구간",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "Interval 1라운드는 휴식 없음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "Tabata 1라운드는 회복 포함",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "휴식 0초는 0길이 구간을 생성하지 않음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: 운동 0초 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: 운동 음수 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: 휴식 음수 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: 소수 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: 라운드 0회 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: 라운드 상한 초과 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: 구간 상한 초과 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: 빈 입력 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: 문자 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: 지수 표기 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: NaN 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: 무한대 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "입력 검증: 불리언 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "정상 숫자 문자열 변환",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "전체 6시간 상한 검증",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "알 수 없는 모드와 누락 설정 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비0 READY는 첫 운동과 경과0 표시",
+        "passed": true,
+        "ms": 1
+      },
+      {
+        "name": "목표 종료 시각 계산",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "콜백 없이 19.25초 경과한 시간 계산",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "정확히 20초에 운동에서 휴식으로",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "정확히 30초에 2라운드 운동",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "Tabata 마지막 회복 후 240초에 완료",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "여러 구간이 지난 95.5초 상태 보정",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "EMOM 60초에 2라운드",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "사용자 지정 EMOM 간격과 종료",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "AMRAP 종료 뒤 음수 없음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "일시정지 중 시간 고정",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "재개는 새 기준 시각으로 계산",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "반복 일시정지/재개 시 중복 계산 없음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "중복 start/resume은 실행 중인 시간을 초기화하지 않음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "종료 시각에 pause해도 FINISHED 유지",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "초기화는 READY/1라운드/경과0",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "잘못된 reset 설정은 기존 상태를 손상시키지 않음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "실행 상태 직렬화 후 여러 구간이 지난 상태 복원",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "일시정지 저장은 재실행 후에도 고정",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "종료 후 재실행하면 FINISHED 복원",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "완료 상태 재저장/복원",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "대기 상태 저장/복원",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "저장값 손상 및 버전 불일치 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "활성 상태에서 시계가 뒤로 가도 표시 경과 시간 감소 방지",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "시간 표기",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "시작 신호는 한 번",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "3·2·1은 각 초당 한 번",
+        "passed": true,
+        "ms": 1
+      },
+      {
+        "name": "휴식 시작은 다른 효과음 이벤트",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "EMOM 전환은 라운드 효과음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "일시정지 후 같은 카운트다운 재생 방지",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "복귀 시 지나간 신호를 몰아서 재생하지 않음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "지연된 콜백의 과거 신호 생략",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "완료 신호 한 번",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "잠금 중 끝난 운동의 뒤늦은 완료음 생략",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "짧은 구간의 시작음과 카운트다운 겹침 방지",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "AudioContext는 unlock 전 생성하지 않음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "효과음 켜기/끄기와 노드 취소",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "음량 0이면 발진기 생성 없음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "오디오 생성 실패는 false로 처리",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "오디오 resume 실패와 타이머 분리",
+        "passed": true,
+        "ms": 1
+      },
+      {
+        "name": "오디오 출력 실패도 외부 예외 없음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "소리 OFF면 AudioContext를 열지 않음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "모드별 설정과 오디오 옵션 저장/복원",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "설정 일부 손상 시 해당 모드만 기본값",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "저장소 접근 오류는 앱을 중단하지 않음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "손상 JSON 무시",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "프로젝트 경로별 저장소 분리",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "1,000개 유효 설정의 경계·복원·종료 불변조건",
+        "passed": true,
+        "ms": 10
+      },
+      {
+        "name": "준비: 모든 모드의 새 기본값은 10초",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 모드별 첫 구간에 딱 한 번만 생성",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 0초이면 완전히 생략",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 시작 직후 READY 구간 10초, 운동 라운드 소모 없음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 정확히 10초 뒤 첫 운동 시작",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 30초에 첫 휴식, 40초에 두 번째 운동",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 일시정지 중 준비시간 고정",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 재개하면 남은 준비만 진행",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 운동 도중 재개해도 준비를 다시 실행하지 않음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 여러 구간 뒤 복원은 준비를 다시 끼워 넣지 않음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 일시정지 상태의 저장/복원",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 구버전 실행 세션은 준비0으로 복원하여 시각 유지",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 음수·빈값·소수·상한초과·null 거부",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 준비 포함 전체6시간 상한 적용",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 이전 설정은 운동값 보존하며 준비10초 추가",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 모드별 준비시간 저장 및 0초 유지",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 시작 효과음은 준비 신호 한 번",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 3·2·1 각1회 후 운동 시작 신호1회",
+        "passed": true,
+        "ms": 1
+      },
+      {
+        "name": "준비: 일시정지 후 같은 초의 준비 카운트다운 중복 없음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 복귀 시 과거 준비음/카운트다운 생략",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 오디오 준비 패턴과 OFF 동작",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: Tabata 마지막 회복 포함 총250초에 완료",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: EMOM 라운드는 준비 종료 후 기준으로 전환",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: AMRAP 종료시간에 준비 추가",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: Interval은 준비 후 마지막 휴식 제외",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: 반복 일시정지/재개에도 준비는 한 번",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "준비: schema2 저장과 준비 구간 round-trip",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "회귀: 준비0 Tabata 20초/30초 구간 전환",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "회귀: 준비0 Interval 1라운드는 마지막 휴식 없음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "회귀: 준비0 휴식0의 연속 라운드",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "회귀: 완료 뒤 음수시간 없음",
+        "passed": true,
+        "ms": 0
+      },
+      {
+        "name": "회귀: 초기화하면 준비를 포함해 처음부터",
+        "passed": true,
+        "ms": 0
+      }
+    ]
+  }
+}
