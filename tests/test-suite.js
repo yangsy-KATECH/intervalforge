@@ -1,8 +1,12 @@
-import { TimerEngine, defaultConfig, validateConfig, buildPlan, formatSeconds, MODES } from '../timer-core.js';
+import { TimerEngine, defaultConfig as productionDefaultConfig, validateConfig, buildPlan, formatSeconds, MODES } from '../timer-core.js';
 import { CueTracker } from '../cue-controller.js';
 import { AudioCueManager } from '../audio.js';
 import { SafeStorage, loadPreferences, defaultPreferences } from '../storage.js';
 
+// 기존 회귀 검사는 명시적으로 준비0. 새 기본 준비10초는 추가 검사에서 확인한다.
+function defaultConfig(mode = 'tabata') {
+  return { ...productionDefaultConfig(mode), prepareSeconds: 0 };
+}
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
 function assert(value, message = '조건이 참이어야 합니다.') {
@@ -68,25 +72,25 @@ class FakeContext {
   }
 }
 
-test('Tabata 기본 총 시간은 마지막 회복 포함 240초', () => {
+test('Tabata 준비0 총 시간은 마지막 회복 포함 240초', () => {
   const p = buildPlan(defaultConfig());
   equal(p.totalMs, 240000);
   equal(p.segments.length, 16);
   equal(p.segments[15].kind, 'rest');
   assert(p.segments[15].finalRecovery);
 });
-test('Interval 기본은 마지막 휴식 없이 230초', () => {
+test('Interval 준비0은 마지막 휴식 없이 230초', () => {
   const p = buildPlan(defaultConfig('interval'));
   equal(p.totalMs, 230000);
   equal(p.segments.length, 15);
   equal(p.segments[14].kind, 'work');
 });
-test('EMOM 기본 60초 × 10라운드', () => {
+test('EMOM 준비0 60초 × 10라운드', () => {
   const p = buildPlan(defaultConfig('emom'));
   equal(p.totalMs, 600000);
   equal(p.segments.length, 10);
 });
-test('AMRAP 기본은 600초 단일 구간', () => {
+test('AMRAP 준비0은 600초 단일 구간', () => {
   const p = buildPlan(defaultConfig('amrap'));
   equal(p.totalMs, 600000);
   equal(p.segments.length, 1);
@@ -142,7 +146,7 @@ test('알 수 없는 모드와 누락 설정 거부', () => {
   throws(() => defaultConfig('other'));
   throws(() => buildPlan({}));
 });
-test('READY는 첫 구간과 경과 0 표시', () => {
+test('준비0 READY는 첫 운동과 경과0 표시', () => {
   const s = fixture().engine.snapshot();
   equal(s.status, 'idle');
   equal(s.remainingSeconds, 20);
@@ -611,3 +615,212 @@ export async function runSuite() {
     results
   };
 }
+
+function preparationTests110() {
+    test('준비: 모든 모드의 새 기본값은 10초', () => {
+      const totals = { tabata: 250000, emom: 610000, amrap: 610000, interval: 240000 };
+      for (const mode of MODES) {
+        const config = productionDefaultConfig(mode);
+        equal(config.prepareSeconds, 10);
+        const plan = buildPlan(config);
+        equal(plan.totalMs, totals[mode]);
+        equal(plan.prepareMs, 10000);
+        equal(plan.exerciseMs, totals[mode] - 10000);
+      }
+    });
+    test('준비: 모드별 첫 구간에 딱 한 번만 생성', () => {
+      for (const mode of MODES) {
+        const plan = buildPlan(productionDefaultConfig(mode));
+        equal(plan.segments[0].kind, 'prepare');
+        equal(plan.segments[0].round, 0);
+        equal(plan.segments.filter(s => s.kind === 'prepare').length, 1);
+        equal(plan.segments[1].kind, 'work');
+        equal(plan.segments[1].round, 1);
+      }
+    });
+    test('준비: 0초이면 완전히 생략', () => {
+      for (const mode of MODES) {
+        const plan = buildPlan({ ...productionDefaultConfig(mode), prepareSeconds: 0 });
+        equal(plan.prepareMs, 0);
+        equal(plan.segments[0].kind, 'work');
+        equal(plan.segments.filter(s => s.kind === 'prepare').length, 0);
+      }
+    });
+    test('준비: 시작 직후 READY 구간 10초, 운동 라운드 소모 없음', () => {
+      const f = fixture(productionDefaultConfig());
+      equal(f.engine.snapshot().remainingSeconds, 10);
+      const s = f.engine.start();
+      equal(s.phaseKind, 'prepare'); equal(s.round, 0); equal(s.remainingSeconds, 10);
+    });
+    test('준비: 정확히 10초 뒤 첫 운동 시작', () => {
+      const f = fixture(productionDefaultConfig());
+      f.engine.start(); f.advance(10000);
+      const s = f.engine.snapshot();
+      equal(s.kind, 'work'); equal(s.round, 1); equal(s.remainingSeconds, 20);
+    });
+    test('준비: 30초에 첫 휴식, 40초에 두 번째 운동', () => {
+      const f = fixture(productionDefaultConfig());
+      f.engine.start(); f.advance(30000);
+      equal(f.engine.snapshot().kind, 'rest'); equal(f.engine.snapshot().round, 1);
+      f.advance(10000);
+      equal(f.engine.snapshot().kind, 'work'); equal(f.engine.snapshot().round, 2);
+      equal(f.engine.snapshot().remainingSeconds, 20);
+    });
+    test('준비: 일시정지 중 준비시간 고정', () => {
+      const f = fixture(productionDefaultConfig());
+      f.engine.start(); f.advance(4250); const s = f.engine.pause();
+      f.advance(60000);
+      equal(f.engine.snapshot().phaseRemainingMs, s.phaseRemainingMs);
+      equal(f.engine.snapshot().phaseKind, 'prepare');
+    });
+    test('준비: 재개하면 남은 준비만 진행', () => {
+      const f = fixture(productionDefaultConfig());
+      f.engine.start(); f.advance(4000); f.engine.pause(); f.advance(60000);
+      f.engine.resume(); f.advance(6000);
+      equal(f.engine.snapshot().kind, 'work'); equal(f.engine.snapshot().remainingSeconds, 20);
+      equal(f.engine.snapshot().elapsedMs, 10000);
+    });
+    test('준비: 운동 도중 재개해도 준비를 다시 실행하지 않음', () => {
+      const f = fixture(productionDefaultConfig());
+      f.engine.start(); f.advance(15000); f.engine.pause(); f.advance(60000);
+      f.engine.resume(); f.advance(1000);
+      equal(f.engine.snapshot().kind, 'work'); equal(f.engine.snapshot().remainingSeconds, 14);
+      equal(f.engine.snapshot().phaseIndex, 1);
+    });
+    test('준비: 여러 구간 뒤 복원은 준비를 다시 끼워 넣지 않음', () => {
+      const f = fixture(productionDefaultConfig());
+      f.engine.start(); f.advance(1000); const data = f.engine.serialize(); f.advance(44000);
+      const s = TimerEngine.restore(data, f.clock).snapshot();
+      equal(s.round, 2); equal(s.kind, 'work'); equal(s.remainingSeconds, 15);
+    });
+    test('준비: 일시정지 상태의 저장/복원', () => {
+      const f = fixture(productionDefaultConfig());
+      f.engine.start(); f.advance(2500); f.engine.pause(); const data = f.engine.serialize();
+      f.advance(100000); const s = TimerEngine.restore(data, f.clock).snapshot();
+      equal(s.status, 'paused'); equal(s.phaseKind, 'prepare'); equal(s.phaseRemainingMs, 7500);
+    });
+    test('준비: 구버전 실행 세션은 준비0으로 복원하여 시각 유지', () => {
+      const f = fixture(defaultConfig()); f.engine.start();
+      const data = f.engine.serialize(); data.schema = 1; delete data.config.prepareSeconds;
+      f.advance(35000); const restored = TimerEngine.restore(data, f.clock);
+      equal(restored.config.prepareSeconds, 0);
+      equal(restored.snapshot().totalMs, 240000);
+      equal(restored.snapshot().round, 2); equal(restored.snapshot().remainingSeconds, 15);
+    });
+    test('준비: 음수·빈값·소수·상한초과·null 거부', () => {
+      for (const prepareSeconds of [-1, '', 0.5, 601, null, 'abc']) {
+        assert(!validateConfig({ ...productionDefaultConfig(), prepareSeconds }).ok);
+      }
+      assert(validateConfig({ ...productionDefaultConfig(), prepareSeconds: 600 }).ok);
+      assert(validateConfig({ ...productionDefaultConfig(), prepareSeconds: '0' }).ok);
+    });
+    test('준비: 준비 포함 전체6시간 상한 적용', () => {
+      assert(validateConfig({ mode: 'amrap', durationSeconds: 21590, prepareSeconds: 10 }).ok);
+      assert(!validateConfig({ mode: 'amrap', durationSeconds: 21600, prepareSeconds: 1 }).ok);
+    });
+    test('준비: 이전 설정은 운동값 보존하며 준비10초 추가', () => {
+      const store = new SafeStorage(memoryStorage(), 'prepare:');
+      const p = defaultPreferences(); p.configs.tabata.workSeconds = 35;
+      for (const mode of MODES) delete p.configs[mode].prepareSeconds;
+      store.write('preferences', p); const loaded = loadPreferences(store);
+      equal(loaded.configs.tabata.workSeconds, 35);
+      for (const mode of MODES) equal(loaded.configs[mode].prepareSeconds, 10);
+    });
+    test('준비: 모드별 준비시간 저장 및 0초 유지', () => {
+      const store = new SafeStorage(memoryStorage(), 'prepare:'); const p = defaultPreferences();
+      p.configs.tabata.prepareSeconds = 0; p.configs.emom.prepareSeconds = 7;
+      store.write('preferences', p); const loaded = loadPreferences(store);
+      equal(loaded.configs.tabata.prepareSeconds, 0); equal(loaded.configs.emom.prepareSeconds, 7);
+    });
+    test('준비: 시작 효과음은 준비 신호 한 번', () => {
+      const f = fixture(productionDefaultConfig()); const cues = new CueTracker();
+      const s = f.engine.start(); equal(cues.observe(s)[0].type, 'prepare');
+      equal(cues.observe(s).length, 0);
+    });
+    test('준비: 3·2·1 각1회 후 운동 시작 신호1회', () => {
+      const f = fixture(productionDefaultConfig()); const cues = new CueTracker();
+      cues.observe(f.engine.start()); const base = f.clock(); const events = [];
+      for (let ms = 50; ms <= 10100; ms += 50) {
+        f.setNow(base + ms); events.push(...cues.observe(f.engine.snapshot()));
+      }
+      equal(events.filter(e => e.type === 'countdown').map(e => e.seconds).join(','), '3,2,1');
+      equal(events.filter(e => e.type === 'work').length, 1);
+      equal(events.filter(e => e.type === 'prepare').length, 0);
+    });
+    test('준비: 일시정지 후 같은 초의 준비 카운트다운 중복 없음', () => {
+      const f = fixture(productionDefaultConfig()); const cues = new CueTracker();
+      cues.observe(f.engine.start()); f.advance(6500); cues.observe(f.engine.snapshot(), { silent: true });
+      f.advance(550); equal(cues.observe(f.engine.snapshot())[0].seconds, 3);
+      cues.observe(f.engine.pause()); f.advance(10000);
+      equal(cues.observe(f.engine.resume()).length, 0);
+    });
+    test('준비: 복귀 시 과거 준비음/카운트다운 생략', () => {
+      const f = fixture(productionDefaultConfig()); const cues = new CueTracker();
+      cues.observe(f.engine.start()); f.advance(45000);
+      equal(cues.observe(f.engine.snapshot(), { silent: true }).length, 0);
+      equal(cues.observe(f.engine.snapshot()).length, 0);
+    });
+    test('준비: 오디오 준비 패턴과 OFF 동작', async () => {
+      const ctx = new FakeContext(); const audio = new AudioCueManager({ contextFactory: () => ctx });
+      await audio.unlock(); assert(audio.playCue({ type: 'prepare' })); equal(ctx.created, 2);
+      audio.setEnabled(false); assert(!audio.playCue({ type: 'prepare' })); equal(audio.nodes.size, 0);
+    });
+    test('준비: Tabata 마지막 회복 포함 총250초에 완료', () => {
+      const f = fixture(productionDefaultConfig()); f.engine.start(); f.advance(240000);
+      equal(f.engine.snapshot().kind, 'rest'); assert(f.engine.snapshot().finalRecovery);
+      f.advance(10000); equal(f.engine.snapshot().status, 'finished'); equal(f.engine.snapshot().remainingSeconds, 0);
+    });
+    test('준비: EMOM 라운드는 준비 종료 후 기준으로 전환', () => {
+      const f = fixture(productionDefaultConfig('emom')); f.engine.start(); f.advance(10000);
+      equal(f.engine.snapshot().round, 1); equal(f.engine.snapshot().remainingSeconds, 60);
+      f.advance(60000); equal(f.engine.snapshot().round, 2); equal(f.engine.snapshot().remainingSeconds, 60);
+    });
+    test('준비: AMRAP 종료시간에 준비 추가', () => {
+      const f = fixture({ mode: 'amrap', prepareSeconds: 10, durationSeconds: 7 });
+      f.engine.start(); f.advance(10000); equal(f.engine.snapshot().remainingSeconds, 7);
+      f.advance(7000); equal(f.engine.snapshot().status, 'finished');
+    });
+    test('준비: Interval은 준비 후 마지막 휴식 제외', () => {
+      const f = fixture({ mode: 'interval', prepareSeconds: 2, workSeconds: 5, restSeconds: 4, rounds: 2 });
+      equal(f.engine.plan.totalMs, 16000); equal(f.engine.plan.segments.length, 4);
+      f.engine.start(); f.advance(11000); equal(f.engine.snapshot().kind, 'work'); equal(f.engine.snapshot().round, 2);
+      f.advance(5000); equal(f.engine.snapshot().status, 'finished');
+    });
+    test('준비: 반복 일시정지/재개에도 준비는 한 번', () => {
+      const f = fixture(productionDefaultConfig()); f.engine.start();
+      for (let i = 0; i < 50; i++) {
+        f.advance(250); f.engine.pause(); f.advance(1000); f.engine.resume();
+      }
+      equal(f.engine.snapshot().elapsedMs, 12500);
+      equal(f.engine.snapshot().kind, 'work'); equal(f.engine.snapshot().remainingSeconds, 18);
+    });
+    test('준비: schema2 저장과 준비 구간 round-trip', () => {
+      const f = fixture(productionDefaultConfig()); f.engine.start(); f.advance(3700);
+      const data = JSON.parse(JSON.stringify(f.engine.serialize())); equal(data.schema, 2);
+      const restored = TimerEngine.restore(data, f.clock).snapshot();
+      equal(restored.elapsedMs, 3700); equal(restored.phaseKind, 'prepare'); equal(restored.phaseRemainingMs, 6300);
+    });
+    test('회귀: 준비0 Tabata 20초/30초 구간 전환', () => {
+      const f = fixture(defaultConfig()); f.engine.start(); f.advance(20000);
+      equal(f.engine.snapshot().kind, 'rest'); f.advance(10000);
+      equal(f.engine.snapshot().kind, 'work'); equal(f.engine.snapshot().round, 2);
+    });
+    test('회귀: 준비0 Interval 1라운드는 마지막 휴식 없음', () => {
+      const p = buildPlan({ mode: 'interval', prepareSeconds: 0, workSeconds: 5, restSeconds: 99, rounds: 1 });
+      equal(p.totalMs, 5000); equal(p.segments.length, 1);
+    });
+    test('회귀: 준비0 휴식0의 연속 라운드', () => {
+      const f = fixture({ mode: 'interval', prepareSeconds: 0, workSeconds: 5, restSeconds: 0, rounds: 3 });
+      f.engine.start(); f.advance(10000); equal(f.engine.snapshot().round, 3); equal(f.engine.snapshot().remainingSeconds, 5);
+    });
+    test('회귀: 완료 뒤 음수시간 없음', () => {
+      const f = fixture({ mode: 'amrap', prepareSeconds: 0, durationSeconds: 1 });
+      f.engine.start(); f.advance(100000); equal(f.engine.snapshot().remainingSeconds, 0); equal(f.engine.snapshot().progress, 1);
+    });
+    test('회귀: 초기화하면 준비를 포함해 처음부터', () => {
+      const f = fixture(productionDefaultConfig()); f.engine.start(); f.advance(45000);
+      const s = f.engine.reset(); equal(s.status, 'idle'); equal(s.remainingSeconds, 10);
+      equal(s.elapsedMs, 0); equal(s.phaseKind, 'prepare');
+    });
+  }
+preparationTests110();

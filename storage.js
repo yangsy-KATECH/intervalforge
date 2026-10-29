@@ -49,7 +49,11 @@ export function loadPreferences(store) {
   if (!raw || raw.schema !== 1) return defaults;
   if (MODES.includes(raw.mode)) defaults.mode = raw.mode;
   for (const mode of MODES) {
-    const result = validateConfig(raw.configs && raw.configs[mode]);
+    const saved = raw.configs && raw.configs[mode];
+    const result = validateConfig(saved && { ...saved,
+      prepareSeconds: saved.prepareSeconds === undefined
+        ? defaultConfig(mode).prepareSeconds : saved.prepareSeconds
+    });
     if (result.ok && result.config.mode === mode) defaults.configs[mode] = result.config;
   }
   if (typeof raw.sound === 'boolean') defaults.sound = raw.sound;

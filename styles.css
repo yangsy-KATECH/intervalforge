@@ -105,3 +105,25 @@ dialog p{color:var(--muted);font-size:.85rem;line-height:1.8}
 @media(max-width:340px){.app-shell{padding-left:10px;padding-right:10px}.timer-card{padding-left:15px;padding-right:15px}.brand-icon{width:32px;height:32px}.controls{gap:8px}.timer-topline h2{letter-spacing:0}}
 @media(orientation:landscape) and (max-height:500px){.app-shell{width:min(100%,820px)}.app-header{margin-bottom:12px}.timer-topline{margin-bottom:10px}.countdown{font-size:5.3rem;line-height:1.1}.countdown[data-long=true]{font-size:4rem}.time-caption{margin-bottom:8px}.round-line{margin-bottom:12px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* 1.1: 숫자 중심 메인 화면, 별도 설정 화면 */
+body[data-screen=timer] .app-shell{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+body[data-screen=timer] #main{flex:1;display:flex;flex-direction:column;min-height:0}
+#main-header{justify-content:flex-end;margin:0 0 8px;min-height:48px}
+.timer-screen{flex:1;display:flex;flex-direction:column;gap:16px;min-height:0}
+#timer-screen .timer-card{flex:1;min-height:220px;display:flex;align-items:center;justify-content:center;background:transparent;border:0;padding:12px 0}
+#timer-screen .countdown{font-size:clamp(4.2rem,22vw,10rem);line-height:1.15}
+#timer-screen .countdown[data-long=true]{font-size:clamp(2.9rem,13.5vw,6.2rem)}
+#timer-screen .controls{margin:0;flex-shrink:0;padding-bottom:10px}
+.settings-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:16px}
+.settings-topbar h2{font-size:1.15rem;margin:0}
+.settings-topbar button{font-size:.8rem}
+.session-panel{--phase:var(--yellow);background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;text-align:center}
+.session-panel[data-kind=work],.session-panel[data-kind=finished]{--phase:var(--green)}
+.session-panel[data-kind=rest]{--phase:var(--cyan)}
+.session-panel .phase-badge{color:var(--phase)}
+.session-panel .time-caption{margin:10px 0 18px}
+.session-panel .control-hint{margin:12px 0 0}
+#settings-screen{padding-top:4px}
+#prepare-help{margin-top:14px}
+@media(orientation:landscape) and (max-height:500px){#timer-screen .timer-card{min-height:120px;padding:0}#timer-screen .countdown{font-size:clamp(4.5rem,16vh,6rem)}#timer-screen .countdown[data-long=true]{font-size:3.8rem}.timer-screen{gap:10px}}

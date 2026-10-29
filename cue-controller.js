@@ -36,7 +36,8 @@ export class CueTracker {
       this.emitted.add(startKey);
       if (canSpeak && state.elapsedMs - state.segmentStartMs <= 650) {
         events.push({
-          type: state.phaseKind === 'rest' ? 'rest' :
+          type: state.phaseKind === 'prepare' ? 'prepare' :
+            state.phaseKind === 'rest' ? 'rest' :
             state.mode === 'emom' ? 'round' : 'work'
         });
       }

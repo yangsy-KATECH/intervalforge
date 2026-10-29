@@ -1,6 +1,6 @@
 {
   "name": "intervalforge-pwa",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "외부 의존성과 빌드 과정이 없는 개인용 운동 타이머 PWA",

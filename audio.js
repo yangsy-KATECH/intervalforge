@@ -83,6 +83,7 @@ export class AudioCueManager {
     if (!this.enabled || this.volume === 0 || !this.context ||
         this.context.state !== 'running') return false;
     const patterns = {
+      prepare: [[0, 520, 0.12], [0.18, 520, 0.12]],
       work: [[0, 1050, 0.12], [0.17, 1450, 0.16]],
       rest: [[0, 390, 0.27]],
       round: [[0, 850, 0.13], [0.18, 1150, 0.15]],

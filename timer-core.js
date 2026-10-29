@@ -1,13 +1,13 @@
 /** DOM·오디오·반복 콜백에 의존하지 않는 밀리초 단위 시간 엔진. */
 export const MODES = Object.freeze(['tabata', 'emom', 'amrap', 'interval']);
 export const MAX_TOTAL_SECONDS = 21600;
-export const LIMITS = Object.freeze({ phase: 3600, rounds: 200, total: MAX_TOTAL_SECONDS });
+export const LIMITS = Object.freeze({ prepare: 600, phase: 3600, rounds: 200, total: MAX_TOTAL_SECONDS });
 
 const DEFAULTS = {
-  tabata: { mode: 'tabata', workSeconds: 20, restSeconds: 10, rounds: 8 },
-  emom: { mode: 'emom', intervalSeconds: 60, rounds: 10 },
-  amrap: { mode: 'amrap', durationSeconds: 600 },
-  interval: { mode: 'interval', workSeconds: 20, restSeconds: 10, rounds: 8 }
+  tabata: { mode: 'tabata', prepareSeconds: 10, workSeconds: 20, restSeconds: 10, rounds: 8 },
+  emom: { mode: 'emom', prepareSeconds: 10, intervalSeconds: 60, rounds: 10 },
+  amrap: { mode: 'amrap', prepareSeconds: 10, durationSeconds: 600 },
+  interval: { mode: 'interval', prepareSeconds: 10, workSeconds: 20, restSeconds: 10, rounds: 8 }
 };
 
 export function defaultConfig(mode = 'tabata') {
@@ -31,7 +31,11 @@ export function validateConfig(raw) {
   if (!raw || !MODES.includes(raw.mode)) {
     return { ok: false, config: null, errors: ['타이머 모드를 선택하세요.'] };
   }
-  const config = { mode: raw.mode };
+  const config = {
+    mode: raw.mode,
+    prepareSeconds: integerInput(raw.prepareSeconds === undefined ? 0 : raw.prepareSeconds,
+      0, LIMITS.prepare, '준비 시간(초)', errors)
+  };
   if (raw.mode === 'tabata' || raw.mode === 'interval') {
     config.workSeconds = integerInput(raw.workSeconds, 1, LIMITS.phase, '운동 시간(초)', errors);
     config.restSeconds = integerInput(raw.restSeconds, 0, LIMITS.phase, '휴식 시간(초)', errors);
@@ -50,7 +54,8 @@ export function validateConfig(raw) {
       total = config.workSeconds * config.rounds +
         config.restSeconds * (config.rounds - (raw.mode === 'interval' ? 1 : 0));
     }
-    if (total > MAX_TOTAL_SECONDS) errors.push('전체 운동 시간은 6시간(21600초)을 넘을 수 없습니다.');
+    total += config.prepareSeconds;
+    if (total > MAX_TOTAL_SECONDS) errors.push('준비를 포함한 전체 시간은 6시간(21600초)을 넘을 수 없습니다.');
   }
   return { ok: errors.length === 0, config: errors.length === 0 ? config : null, errors };
 }
@@ -68,6 +73,7 @@ export function buildPlan(raw) {
     }));
     cursor += seconds * 1000;
   }
+  add('prepare', config.prepareSeconds, 0);
   if (config.mode === 'amrap') {
     add('work', config.durationSeconds, 1);
   } else if (config.mode === 'emom') {
@@ -84,7 +90,8 @@ export function buildPlan(raw) {
   }
   return Object.freeze({
     config: Object.freeze(config), segments: Object.freeze(segments),
-    totalMs: cursor, rounds: config.rounds || 1
+    totalMs: cursor, prepareMs: config.prepareSeconds * 1000,
+    exerciseMs: cursor - config.prepareSeconds * 1000, rounds: config.rounds || 1
   });
 }
 
@@ -160,6 +167,8 @@ export class TimerEngine {
       phaseKind: segment.kind, phaseIndex: index,
       round: segment.round, totalRounds: this.plan.rounds,
       totalMs: this.plan.totalMs, elapsedMs: elapsed,
+      prepareMs: this.plan.prepareMs, exerciseMs: this.plan.exerciseMs,
+      preparing: !finished && segment.kind === 'prepare',
       workoutRemainingMs: this.plan.totalMs - elapsed,
       phaseRemainingMs, remainingSeconds: Math.ceil(phaseRemainingMs / 1000),
       phaseDurationMs: segment.seconds * 1000,
@@ -175,7 +184,7 @@ export class TimerEngine {
   serialize(now = this.clock()) {
     this.snapshot(now);
     return {
-      schema: 1, config: { ...this.config }, status: this.status,
+      schema: 2, config: { ...this.config }, status: this.status,
       elapsedBeforeRunMs: this.elapsedBeforeRunMs,
       runStartedAt: this.runStartedAt,
       highWaterMs: this.highWaterMs,
@@ -184,11 +193,12 @@ export class TimerEngine {
     };
   }
   static restore(data, clock = () => Date.now()) {
-    if (!data || data.schema !== 1 ||
+    if (!data || ![1, 2].includes(data.schema) ||
         !['idle', 'running', 'paused', 'finished'].includes(data.status)) {
       throw new Error('저장된 타이머의 형식 또는 버전이 올바르지 않습니다.');
     }
-    const engine = new TimerEngine(data.config, clock);
+    const config = data.schema === 1 ? { ...data.config, prepareSeconds: 0 } : data.config;
+    const engine = new TimerEngine(config, clock);
     const total = engine.plan.totalMs;
     if (!finiteTime(data.elapsedBeforeRunMs) || data.elapsedBeforeRunMs > total ||
         !finiteTime(data.highWaterMs) || data.highWaterMs > total ||

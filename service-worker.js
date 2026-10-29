@@ -1,6 +1,6 @@
 'use strict';
 // 배포 파일을 변경할 때마다 VERSION을 올린다.
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const SCOPE = new URL(self.registration.scope);
 const PREFIX = `intervalforge:${encodeURIComponent(SCOPE.pathname)}:`;
 const CACHE_NAME = PREFIX + VERSION;

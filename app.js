@@ -22,8 +22,8 @@ let restored = false;
 const savedSession = store.read('session');
 if (savedSession) {
   try {
-    engine = TimerEngine.restore(savedSession);
-    restored = engine.status !== 'idle';
+    const candidate = TimerEngine.restore(savedSession);
+    if (candidate.status !== 'idle') { engine = candidate; restored = true; }
   } catch (_) {
     store.remove('session');
     storageWarning('저장된 진행 상태가 올바르지 않아 대기로 시작합니다. 운동 설정은 유지합니다.');
@@ -31,7 +31,7 @@ if (savedSession) {
 }
 if (!engine) engine = new TimerEngine(prefs.configs[prefs.mode]);
 prefs.mode = engine.config.mode;
-prefs.configs[prefs.mode] = { ...engine.config };
+if (!restored) prefs.configs[prefs.mode] = { ...engine.config };
 
 const cues = new CueTracker();
 let frameId = 0;
@@ -125,6 +125,7 @@ async function syncWakeLock() {
 
 function fillInputs(config) {
   $('mode-select').value = config.mode;
+  $('prepare-input').value = config.prepareSeconds;
   if ('workSeconds' in config) $('work-input').value = config.workSeconds;
   if ('restSeconds' in config) $('rest-input').value = config.restSeconds;
   if ('rounds' in config) $('rounds-input').value = config.rounds;
@@ -155,6 +156,7 @@ function fillInputs(config) {
 function readInputs() {
   return {
     mode: $('mode-select').value,
+    prepareSeconds: $('prepare-input').value,
     workSeconds: $('work-input').value,
     restSeconds: $('rest-input').value,
     rounds: $('rounds-input').value,
@@ -165,7 +167,7 @@ function readInputs() {
 function showValidation(errors) {
   $('config-error').hidden = errors.length === 0;
   text('config-error', errors.join(' '));
-  for (const key of ['work', 'rest', 'rounds', 'interval', 'duration']) {
+  for (const key of ['prepare', 'work', 'rest', 'rounds', 'interval', 'duration']) {
     const input = $(`${key}-input`);
     if (!input.disabled && errors.length) input.setAttribute('aria-invalid', 'true');
     else input.removeAttribute('aria-invalid');
@@ -188,7 +190,9 @@ function updatePreview(config) {
   } else {
     preview = `[운동 ${config.workSeconds}초 → 휴식 ${config.restSeconds}초] × ${config.rounds - 1} → 운동 ${config.workSeconds}초 → 완료`;
   }
-  text('sequence-preview', preview);
+  const preparation = config.prepareSeconds > 0 ? '준비 ' + config.prepareSeconds + '초 (1회) → ' : '준비 생략 → ';
+  text('sequence-preview', preparation + preview);
+  text('exercise-total', '운동·휴식만: ' + formatSeconds(plan.exerciseMs / 1000) + ' / 준비: ' + config.prepareSeconds + '초');
 }
 function commitInputs() {
   if (isBusy()) return true;
@@ -201,9 +205,10 @@ function commitInputs() {
   }
   prefs.mode = result.config.mode;
   prefs.configs[prefs.mode] = result.config;
-  engine.reset(result.config);
-  cues.reset();
-  previousState = null;
+  if (JSON.stringify(engine.config) !== JSON.stringify(result.config)) {
+    commandToken++; stopLoop(); audio.cancel();
+    engine.reset(result.config); cues.reset(); previousState = null;
+  }
   savePrefs();
   saveSession();
   updatePreview(result.config);
@@ -213,24 +218,28 @@ function commitInputs() {
 
 function render(state) {
   const phase = state.status === 'idle' ? 'READY'
-    : state.status === 'finished' ? 'FINISHED' : state.phaseKind.toUpperCase();
+    : state.status === 'finished' ? 'FINISHED' : state.phaseKind === 'prepare' ? 'READY' : state.phaseKind.toUpperCase();
   text('timer-title', names[state.mode]);
   $('timer-card').dataset.kind = state.status === 'paused' ? 'ready' : state.kind;
+  $('session-panel').dataset.kind = $('timer-card').dataset.kind;
   text('phase-badge', state.status === 'paused' ? `PAUSED · ${phase}` : phase);
   const description = state.status === 'paused' ? '일시정지 · 재개하면 이어서 진행합니다'
     : state.status === 'idle' ? '시작할 준비가 되었습니다'
     : state.status === 'finished' ? '모든 구간이 끝났습니다'
+    : state.phaseKind === 'prepare' ? '운동 시작 전 준비 · 이번 시작에서 한 번만 진행합니다'
     : state.finalRecovery ? '마지막 회복 구간'
     : state.phaseKind === 'rest' ? '호흡을 정리하고 다음 운동을 준비하세요'
     : state.mode === 'emom' ? '이번 라운드 운동을 시작하세요' : '지금은 운동할 시간입니다';
   text('phase-description', description);
   const digits = formatSeconds(state.remainingSeconds);
   text('countdown', digits);
+  $('countdown').setAttribute('aria-label', (state.status === 'paused' ? '일시정지, ' : '') + phase + ', 남은 시간 ' + digits);
   $('countdown').dataset.long = String(digits.length > 5);
   text('time-caption', state.status === 'finished' ? '운동 완료'
+    : state.phaseKind === 'prepare' ? '준비 남은 시간'
     : state.mode === 'amrap' ? '전체 운동 남은 시간' : '현재 구간 남은 시간');
   text('round-caption', state.mode === 'amrap' ? '운동 세션' : '라운드');
-  text('round-value', `${state.round} / ${state.totalRounds}`);
+  text('round-value', state.preparing ? '준비 중 · 전체 ' + state.totalRounds + '회' : `${state.round} / ${state.totalRounds}`);
   $('workout-progress').value = state.progress;
   text('progress-value', `${Math.floor(state.progress * 100)}%`);
   text('elapsed-value', formatSeconds(Math.floor(state.elapsedMs / 1000)));
@@ -295,6 +304,7 @@ function step({ silent = false, retryPromise = null } = {}) {
       const spoken = state.status === 'paused' ? '일시정지'
         : state.kind === 'finished' ? '운동 완료'
         : state.kind === 'ready' ? '준비'
+        : state.phaseKind === 'prepare' ? '시작 전 준비'
         : state.phaseKind === 'work' ? '운동' : '휴식';
       text('phase-announcement', `${names[state.mode]} ${spoken}, ${state.round}라운드`);
     }
@@ -329,7 +339,8 @@ function resetWorkout() {
   commandToken++;
   stopLoop();
   audio.cancel();
-  engine.reset();
+  engine.reset(prefs.configs[prefs.mode]);
+  fillInputs(engine.config);
   cues.reset();
   previousState = null;
   $('restore-notice').hidden = true;
@@ -361,8 +372,12 @@ $('primary-button').addEventListener('click', () => {
     step();
   } else {
     if (engine.status !== 'paused' && !commitInputs()) {
+      openSettings();
       $('config-error').scrollIntoView({ block: 'nearest' });
       return;
+    }
+    if (engine.status === 'finished') {
+      engine.reset(prefs.configs[prefs.mode]); cues.reset(); previousState = null;
     }
     const retryPromise = audio.unlock();
     if (engine.status === 'paused') engine.resume();
@@ -389,7 +404,7 @@ $('mode-select').addEventListener('change', () => {
   fillInputs(prefs.configs[mode]);
   commitInputs();
 });
-for (const key of ['work', 'rest', 'rounds', 'interval', 'duration']) {
+for (const key of ['prepare', 'work', 'rest', 'rounds', 'interval', 'duration']) {
   $(`${key}-input`).addEventListener('input', () => {
     if (!isBusy()) commitInputs();
   });
@@ -509,3 +524,30 @@ void setupPWA({
     $('update-hint').hidden = !value || !isBusy();
   }
 }).then(value => { pwa = value; });
+
+function openSettings() {
+    $('timer-screen').hidden = true;
+    $('settings-screen').hidden = false;
+    $('main-header').hidden = true;
+    $('open-settings-button').setAttribute('aria-expanded', 'true');
+    document.body.dataset.screen = 'settings';
+    window.scrollTo(0, 0);
+    $('settings-screen-title').focus({ preventScroll: true });
+  }
+function closeSettings() {
+    if (!isBusy() && !commitInputs()) {
+      const invalid = document.querySelector('#settings-screen [aria-invalid="true"]');
+      if (invalid) { invalid.focus(); invalid.scrollIntoView({ block: 'center' }); }
+      return;
+    }
+    $('settings-screen').hidden = true;
+    $('timer-screen').hidden = false;
+    $('main-header').hidden = false;
+    $('open-settings-button').setAttribute('aria-expanded', 'false');
+    document.body.dataset.screen = 'timer';
+    window.scrollTo(0, 0);
+    $('primary-button').focus({ preventScroll: true });
+  }
+$('open-settings-button').addEventListener('click', openSettings);
+$('close-settings-button').addEventListener('click', closeSettings);
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && !$('settings-screen').hidden && !$('reset-dialog').open) closeSettings(); });
