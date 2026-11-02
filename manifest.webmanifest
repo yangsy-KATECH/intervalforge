@@ -1,0 +1,33 @@
+{
+  "id": "./",
+  "name": "IntervalForge",
+  "short_name": "IntervalForge",
+  "lang": "ko",
+  "description": "오프라인 운동 타이머: Tabata, EMOM, AMRAP, Interval",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0d0f",
+  "theme_color": "#0a0d0f",
+  "categories": ["health", "sports"],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
