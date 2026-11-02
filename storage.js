@@ -35,7 +35,7 @@ export class SafeStorage {
   }
 }
 
-export function defaultPreferences() {
+function defaultPreferences110() {
   return {
     schema: 1, mode: 'tabata',
     configs: Object.fromEntries(MODES.map(mode => [mode, defaultConfig(mode)])),
@@ -43,7 +43,7 @@ export function defaultPreferences() {
   };
 }
 
-export function loadPreferences(store) {
+function loadPreferences110(store) {
   const defaults = defaultPreferences();
   const raw = store.read('preferences');
   if (!raw || raw.schema !== 1) return defaults;
@@ -63,3 +63,34 @@ export function loadPreferences(store) {
   if (typeof raw.keepAwake === 'boolean') defaults.keepAwake = raw.keepAwake;
   return defaults;
 }
+
+const audioPreferences120 = (function createPreferences120(legacyDefaults, legacyLoad) {
+    const normalizeMode = value => ['effects', 'ko', 'en'].includes(value) ? value : 'effects';
+    return {
+      defaults() {
+        return { ...legacyDefaults(), volume: 1, cueMode: 'effects', halfwayEnabled: false, audioSettingsVersion: 120 };
+      },
+      load(store) {
+        let raw = null;
+        try { raw = store.read('preferences'); } catch (_) {}
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) raw = null;
+        const preferences = legacyLoad(store);
+        const migrated = raw && raw.audioSettingsVersion === 120;
+        const savedVolume = raw && raw.volume;
+        preferences.volume = migrated && typeof savedVolume === 'number'
+          && Number.isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 1 ? savedVolume : 1;
+        preferences.cueMode = normalizeMode(raw && raw.cueMode);
+        preferences.halfwayEnabled = Boolean(raw && raw.halfwayEnabled === true);
+        preferences.audioSettingsVersion = 120;
+        const save = () => {
+          try { return store.write('preferences', preferences); } catch (_) { return false; }
+        };
+        // JSON에는 포함하지 않는 저장 연결. 기존 app.js의 prefs 객체를 그대로 사용한다.
+        Object.defineProperty(preferences, '__saveAudio120', { value: save, enumerable: false });
+        if (!migrated) save();
+        return preferences;
+      }
+    };
+  })(defaultPreferences110, loadPreferences110);
+export function defaultPreferences() { return audioPreferences120.defaults(); }
+export function loadPreferences(store) { return audioPreferences120.load(store); }

@@ -824,3 +824,95 @@ function preparationTests110() {
     });
   }
 preparationTests110();
+
+function audioTests120() {
+    function withHalfway(config) {
+      const f = fixture(config);
+      const tracker = new CueTracker();
+      tracker.setConfigProvider(() => f.engine.config);
+      tracker.setHalfwayEnabled(true);
+      tracker.observe(f.engine.start());
+      return { f, tracker };
+    }
+    const halfCount = events => events.filter(event => event.type === 'halfway').length;
+    test('1.2: 기본 음량100%, 절반OFF, 효과음 모드', () => {
+      const p = defaultPreferences();
+      equal(p.volume, 1); equal(p.halfwayEnabled, false); equal(p.cueMode, 'effects');
+    });
+    test('1.2: 이전 음량을 한 번만100%로 이전', () => {
+      const store = new SafeStorage(memoryStorage(), 'audio120:');
+      const old = defaultPreferences(); old.volume = 0.3; delete old.audioSettingsVersion;
+      store.write('preferences', old);
+      const p = loadPreferences(store); equal(p.volume, 1);
+      p.volume = 0.25; store.write('preferences', p);
+      equal(loadPreferences(store).volume, 0.25);
+    });
+    test('1.2: 이전 후 음량0과 음성·절반 설정 유지', () => {
+      const store = new SafeStorage(memoryStorage(), 'audio120:');
+      const p = defaultPreferences(); p.volume = 0; p.cueMode = 'ko'; p.halfwayEnabled = true;
+      store.write('preferences', p); const loaded = loadPreferences(store);
+      equal(loaded.volume, 0); equal(loaded.cueMode, 'ko'); equal(loaded.halfwayEnabled, true);
+    });
+    test('1.2: 운동 절반은 경계에서 한 번', () => {
+      const { f, tracker } = withHalfway(defaultConfig());
+      f.advance(9900); tracker.observe(f.engine.snapshot());
+      f.advance(100); equal(halfCount(tracker.observe(f.engine.snapshot())), 1);
+      equal(halfCount(tracker.observe(f.engine.snapshot())), 0);
+    });
+    test('1.2: 휴식 절반은 별도로 한 번', () => {
+      const { f, tracker } = withHalfway(defaultConfig());
+      f.advance(20000); tracker.observe(f.engine.snapshot(), { silent: true });
+      f.advance(4900); tracker.observe(f.engine.snapshot());
+      f.advance(100); equal(halfCount(tracker.observe(f.engine.snapshot())), 1);
+    });
+    test('1.2: 준비 구간 절반 제외', () => {
+      const { f, tracker } = withHalfway(productionDefaultConfig());
+      f.advance(4900); tracker.observe(f.engine.snapshot());
+      f.advance(100); equal(halfCount(tracker.observe(f.engine.snapshot())), 0);
+    });
+    test('1.2: 6초 구간은 마지막3초와 겹쳐 절반 생략', () => {
+      const { f, tracker } = withHalfway({ mode: 'amrap', prepareSeconds: 0, durationSeconds: 6 });
+      f.advance(2900); tracker.observe(f.engine.snapshot());
+      f.advance(100); equal(halfCount(tracker.observe(f.engine.snapshot())), 0);
+    });
+    test('1.2: 늦은 콜백의 지난 절반 신호 생략', () => {
+      const { f, tracker } = withHalfway(defaultConfig());
+      f.advance(11000); equal(halfCount(tracker.observe(f.engine.snapshot())), 0);
+      f.advance(100); equal(halfCount(tracker.observe(f.engine.snapshot())), 0);
+    });
+    test('1.2: 복귀 시 소비한 절반 신호 재생 안 함', () => {
+      const { f, tracker } = withHalfway(defaultConfig());
+      f.advance(9900); tracker.observe(f.engine.snapshot());
+      f.advance(100); tracker.observe(f.engine.snapshot(), { silent: true });
+      equal(halfCount(tracker.observe(f.engine.snapshot())), 0);
+    });
+    test('1.2: 절반 이전 일시정지·재개 후 정상 경계만 알림', () => {
+      const { f, tracker } = withHalfway(defaultConfig());
+      f.advance(9900); tracker.observe(f.engine.pause());
+      f.advance(30000); tracker.observe(f.engine.resume());
+      f.advance(100); equal(halfCount(tracker.observe(f.engine.snapshot())), 1);
+    });
+    test('1.2: 절반OFF 상태에서 지난 신호는 ON 후 재생 안 함', () => {
+      const { f, tracker } = withHalfway(defaultConfig()); tracker.setHalfwayEnabled(false);
+      f.advance(9900); tracker.observe(f.engine.snapshot());
+      f.advance(100); equal(halfCount(tracker.observe(f.engine.snapshot())), 0);
+      tracker.setHalfwayEnabled(true);
+      equal(halfCount(tracker.observe(f.engine.snapshot())), 0);
+    });
+    test('1.2: 구분음 운동2음·휴식2음·종료3음', async () => {
+      const ctx = new FakeContext(); const manager = new AudioCueManager({ contextFactory: () => ctx });
+      await manager.unlock();
+      assert(manager.playCue({ type: 'work' })); equal(ctx.created, 2);
+      assert(manager.playCue({ type: 'rest' })); equal(ctx.created, 4);
+      assert(manager.playCue({ type: 'finish' })); equal(ctx.created, 7);
+      manager.cancel();
+    });
+    test('1.2: 알림OFF와 음량0에서는 추가 음을 만들지 않음', async () => {
+      const ctx = new FakeContext(); const manager = new AudioCueManager({ contextFactory: () => ctx });
+      await manager.unlock(); manager.setEnabled(false);
+      assert(!manager.playCue({ type: 'work' })); equal(ctx.created, 0);
+      manager.setEnabled(true); manager.setVolume(0);
+      assert(!manager.playCue({ type: 'finish' })); equal(ctx.created, 0);
+    });
+  }
+audioTests120();

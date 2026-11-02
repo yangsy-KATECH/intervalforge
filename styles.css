@@ -127,3 +127,10 @@ body[data-screen=timer] #main{flex:1;display:flex;flex-direction:column;min-heig
 #settings-screen{padding-top:4px}
 #prepare-help{margin-top:14px}
 @media(orientation:landscape) and (max-height:500px){#timer-screen .timer-card{min-height:120px;padding:0}#timer-screen .countdown{font-size:clamp(4.5rem,16vh,6rem)}#timer-screen .countdown[data-long=true]{font-size:3.8rem}.timer-screen{gap:10px}}
+
+/* 1.2.0: 알림 방식과 개별 미리 듣기 */
+.sound-options-120{margin:18px 0;padding-top:16px;border-top:1px solid var(--border)}
+.sound-options-120>label:first-child{display:block;margin-bottom:8px}
+#cue-mode-select{width:100%;margin-bottom:12px}
+.cue-preview-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.cue-preview-buttons button{min-width:0;white-space:normal;line-height:1.5;padding:12px 6px}

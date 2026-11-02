@@ -551,3 +551,71 @@ function closeSettings() {
 $('open-settings-button').addEventListener('click', openSettings);
 $('close-settings-button').addEventListener('click', closeSettings);
 document.addEventListener('keydown', event => { if (event.key === 'Escape' && !$('settings-screen').hidden && !$('reset-dialog').open) closeSettings(); });
+
+function connectAudioSettings120() {
+    let previewToken = 0;
+    const modeInput = $('cue-mode-select');
+    const halfwayInput = $('halfway-toggle');
+    const status = $('cue-mode-status');
+    const save = () => {
+      if (typeof prefs.__saveAudio120 !== 'function' || prefs.__saveAudio120() === false) {
+        status.textContent = '현재 창에는 적용했지만 저장하지 못했습니다. 재실행하면 설정이 달라질 수 있습니다.';
+      }
+    };
+    const describeMode = () => {
+      if (prefs.cueMode === 'effects') {
+        status.textContent = '운동: 높은 상승 2음 · 휴식: 낮고 긴 하강 2음 · 종료: 상승 3음';
+      } else if (!globalThis.speechSynthesis || !globalThis.SpeechSynthesisUtterance) {
+        status.textContent = '이 환경은 음성을 지원하지 않아 효과음만 사용합니다.';
+      } else {
+        status.textContent = '선택한 음성과 효과음을 함께 사용합니다. 언어 미지원·음성 실패 시 효과음은 유지됩니다.';
+      }
+    };
+    modeInput.value = prefs.cueMode;
+    halfwayInput.checked = prefs.halfwayEnabled;
+    audio.setCueMode(prefs.cueMode);
+    audio.setVolume(prefs.volume);
+    cues.setConfigProvider(() => engine.config);
+    cues.setHalfwayEnabled(prefs.halfwayEnabled);
+    $('volume-input').value = String(Math.round(prefs.volume * 100));
+    $('volume-value').textContent = Math.round(prefs.volume * 100) + '%';
+    describeMode();
+    modeInput.addEventListener('change', () => {
+      previewToken++;
+      prefs.cueMode = modeInput.value;
+      audio.setCueMode(prefs.cueMode);
+      describeMode(); save();
+    });
+    halfwayInput.addEventListener('change', () => {
+      prefs.halfwayEnabled = halfwayInput.checked;
+      cues.setHalfwayEnabled(prefs.halfwayEnabled);
+      describeMode(); save();
+    });
+    for (const button of document.querySelectorAll('[data-preview-cue]')) {
+      button.addEventListener('click', async () => {
+        const token = ++previewToken;
+        const command = commandToken;
+        const wasRunning = engine.status === 'running';
+        try {
+          // 실행 중인 운동 신호를 취소하거나 테스트음을 섞지 않는다.
+          if (!wasRunning) audio.cancel();
+          await audio.unlock();
+          if (token !== previewToken || command !== commandToken || document.hidden) return;
+          if (wasRunning || engine.status === 'running') {
+            status.textContent = '운동 중에는 소리 활성화만 합니다. 미리 듣기는 일시정지 또는 종료 후 사용하세요.';
+            return;
+          }
+          const played = audio.playCue({ type: button.dataset.previewCue });
+          status.textContent = played
+            ? '미리 듣기 신호를 요청했습니다. 실제 소리가 없으면 기기 음량·출력 장치를 확인하세요.'
+            : '알림 소리 ON, 앱 음량, 기기 미디어 음량을 확인하고 다시 눌러 주세요.';
+        } catch (_) {
+          status.textContent = '소리를 활성화하지 못했습니다. 다시 직접 눌러 주세요. 타이머는 계속 사용할 수 있습니다.';
+        }
+      });
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { previewToken++; audio.cancel(); }
+    });
+  }
+connectAudioSettings120();
